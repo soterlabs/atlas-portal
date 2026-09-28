@@ -154,11 +154,23 @@ function validateCompleteness(markdown: string, trees: ExportAtlasTreeScopeTrees
  * Returns the same shape as the old Supabase pipeline so the portal UI
  * (AtlasPagePrerendered, Sidebar, ContentTree, SearchModal) works unchanged.
  */
+// SEARCH-86: parse once per corpus version per process. The GitHub path hands
+// back the compose cache's own string, so the comparison short-circuits on
+// reference equality; the override path compares content. Returning the SAME
+// tree object for the same markdown is load-bearing: downstream per-tree memos
+// (the answer route's context map) key on tree identity.
+let parsedCache: {
+  markdown: string;
+  result: { exportScopeTrees: ExportAtlasTreeScopeTrees; uuidMappings: UuidMappings };
+} | null = null;
+
 export async function loadAtlasPortalData(): Promise<{
   exportScopeTrees: ExportAtlasTreeScopeTrees;
   uuidMappings: UuidMappings;
 }> {
   const markdown = await fetchAtlasMarkdownContent();
+  if (parsedCache && parsedCache.markdown === markdown) return parsedCache.result;
+
   const exportScopeTrees = parseAtlasMarkdown(markdown);
 
   // Validate: every document in the markdown must appear in the tree
@@ -170,11 +182,18 @@ export async function loadAtlasPortalData(): Promise<{
     collectUuids(tree, identityMap);
   }
 
-  return {
+  const result = {
     exportScopeTrees,
     uuidMappings: {
       notionPageIDsToAtlasUUIDs: identityMap,
       atlasUUIDsToNotionPageIds: identityMap,
     },
   };
+  parsedCache = { markdown, result };
+  return result;
+}
+
+/** For tests: clear the parse cache. */
+export function _clearAtlasPortalDataCache(): void {
+  parsedCache = null;
 }

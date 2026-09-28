@@ -35,15 +35,27 @@ A directory is composed exactly like the GitHub tarball (it must contain the `A/
 
 The Atlas markdown follows a strict format documented in [`docs/ATLAS_MARKDOWN_SYNTAX.md`](./docs/ATLAS_MARKDOWN_SYNTAX.md). Each document has a type, number, name, UUID, and content. The hierarchy is encoded in document numbers (e.g., `A.1.2.3`) and described in [`docs/ATLAS_DOCUMENT_NUMBERING_RULES.md`](./docs/ATLAS_DOCUMENT_NUMBERING_RULES.md).
 
+## Search
+
+Search opens with **Cmd/Ctrl+K** or **/** (Cmd/Ctrl+F is the browser's find again) and
+closes with the X or a click outside; Escape is deliberately ignored while working in it.
+Results are grouped as Exact, Similar (semantic), Partial and Related. Query syntax:
+`type:Annotation`, `in:A.1.2`, `title:word`, `"phrase"`, `'CaseSensitive'`, `-exclude`,
+and a UUID prefix jumps straight to a document.
+
+Search runs from prebuilt, hash-pinned artifacts that must be refreshed whenever the
+Atlas changes. See [`docs/SEARCH_ARTIFACTS.md`](./docs/SEARCH_ARTIFACTS.md).
+
 ## API Endpoints
 
 The portal exposes the Atlas in multiple formats:
 
-| Endpoint          | Format   | Description                              |
-| ----------------- | -------- | ---------------------------------------- |
-| `/api/atlas.json` | JSON     | Structured tree of all Atlas documents   |
-| `/api/atlas.md`   | Markdown | Complete Atlas as a single markdown file |
-| `/api/atlas.yaml` | YAML     | Same structure as JSON, in YAML format   |
+| Endpoint              | Format   | Description                                                          |
+| --------------------- | -------- | -------------------------------------------------------------------- |
+| `/api/atlas.json`     | JSON     | Structured tree of all Atlas documents                               |
+| `/api/atlas.md`       | Markdown | Complete Atlas as a single markdown file                             |
+| `/api/atlas.yaml`     | YAML     | Same structure as JSON, in YAML format                               |
+| `/api/search/rewrite` | JSON     | Explicit Atlas-vocabulary query rewrite (disabled unless configured) |
 
 ## Scripts
 
@@ -57,10 +69,29 @@ npx tsx scripts/validate-atlas-json.ts [path/to/atlas.json]
 
 ## Environment Variables
 
-| Variable              | Required | Description                                                                                                                                                                                                                |
-| --------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GITHUB_TOKEN`        | No       | GitHub personal access token for higher API rate limits                                                                                                                                                                    |
-| `ATLAS_LOCAL_CONTENT` | No       | Dev-only. Path to a local Atlas content tree or composed `.md` file to render instead of fetching from GitHub (see [Quick Start](#local-development-against-a-local-atlas-no-github)). Ignored when `NODE_ENV=production`. |
+| Variable                       | Required                                           | Description                                                                                                                                                                                                                |
+| ------------------------------ | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GITHUB_TOKEN`                 | No                                                 | GitHub personal access token for higher API rate limits                                                                                                                                                                    |
+| `ATLAS_LOCAL_CONTENT`          | No                                                 | Dev-only. Path to a local Atlas content tree or composed `.md` file to render instead of fetching from GitHub (see [Quick Start](#local-development-against-a-local-atlas-no-github)). Ignored when `NODE_ENV=production`. |
+| `ANTHROPIC_API_KEY`            | For query rewriting with the Anthropic provider    | Server-held. Never sent to the browser. The answer feature is OpenAI-only.                                                                                                                                                 |
+| `QUERY_REWRITE_ENABLED`        | No                                                 | Set to the exact string `true` to enable the paid `/api/search/rewrite` route. It fails closed otherwise.                                                                                                                  |
+| `NEXT_PUBLIC_SEARCH_MODE`      | No                                                 | Search execution default, inlined at build time: `auto` (default: device detection), `local`, or `low-memory` (query model and document vectors stay server-side; the modal reports the mode but has no user switch).      |
+| `NEXT_PUBLIC_SEARCH_EMBEDDER`  | No                                                 | Legacy alias: `server` is equivalent to `NEXT_PUBLIC_SEARCH_MODE=low-memory`. Inlined at build time.                                                                                                                       |
+| `OPENAI_API_KEY`               | For rewriting and answers with the OpenAI provider | Server-held. Never sent to the browser.                                                                                                                                                                                    |
+| `QUERY_REWRITE_PROVIDER`       | No                                                 | `openai` (default) or `anthropic`; selects the rewrite provider and key. Answers require `openai`.                                                                                                                         |
+| `SEARCH_ANSWERS_ENABLED`       | No                                                 | Set to the exact string `true`, with the OpenAI provider and key, to enable the answer feature. Off otherwise.                                                                                                             |
+| `SEARCH_ANSWER_CONTEXT_POLICY` | No                                                 | Answer context policy; unknown values fall back to `full-document`.                                                                                                                                                        |
+| `TRANSFORMERS_CACHE_DIR`       | No                                                 | Where the artifact build scripts cache the embedding model (default `.cache/transformers`).                                                                                                                                |
+
+The rewrite endpoint has same-origin checks, bounded streaming request bodies, and bounded
+per-client/instance rate limiting. The Ask control is hidden unless the rewrite flag and a
+provider key are configured.
+For a multi-instance public deployment, retain those guards and add a distributed
+platform-level rate limit before enabling it.
+
+The low-memory dense endpoint applies the same origin/body and process-local admission
+guards to CPU-heavy inference. A multi-instance deployment should also apply a distributed
+platform-level limit to `/api/search/dense`.
 
 ## Tech Stack
 

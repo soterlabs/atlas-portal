@@ -567,8 +567,6 @@ export default function ContentTree({
     };
   }, [pathLookupMap, docNoToUuidMap]);
 
-  console.log('Rendering ContentTree');
-
   // Handler to toggle expansion of Article/Section nodes
   const handleToggleExpanded = React.useCallback((uuid: string) => {
     setExpandedKeys((prev) => {

@@ -70,3 +70,13 @@ __pycache__/
 
 logs
 .claude/worktrees/
+
+# transient dry-run output of scripts/search-expansion/generate.ts
+data/search/expansion-batch-requests.json
+data/search/query-rewrite-cache.json
+
+# transformers.js model cache for the artifact build scripts (scripts/embedding-eval/transformers-env.ts)
+/.cache/
+
+# Sibling temp files of the atomic artifact writes (scripts/build-search-vectors.ts)
+public/*.tmp

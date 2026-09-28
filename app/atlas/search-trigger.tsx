@@ -26,14 +26,14 @@ export default function SearchTrigger({ onOpen }: SearchTriggerProps) {
             className="hidden rounded bg-slate-100 px-2 py-1 text-xs text-slate-500 sm:inline-block dark:bg-zinc-800 dark:text-slate-300"
             suppressHydrationWarning
           >
-            {isMac ? '⌘' : 'Ctrl+'}F
+            {isMac ? '⌘' : 'Ctrl+'}K
           </kbd>
         }
         classNames={{
           inputWrapper:
             'cursor-pointer transition-all duration-200 border border-slate-200 hover:border-blue-400 bg-white hover:bg-blue-100 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800',
         }}
-        aria-label="Open search dialog (CMD+F or Ctrl+F)"
+        aria-label="Open search dialog (CMD+K or Ctrl+K)"
       />
     </div>
   );

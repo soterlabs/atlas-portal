@@ -38,3 +38,18 @@ jobs:
 
       - name: Test
         run: npm run test:run
+
+  search-artifacts:
+    name: search artifacts fresh
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      # Fails loudly when the committed search artifacts no longer match the live Atlas.
+      # Compares against https://sky-atlas.io/api/atlas.json unless a URL argument is passed.
+      # Remedy: npm run search:refresh-artifacts, commit, push. See docs/SEARCH_ARTIFACTS.md.
+      - run: npm run search:check-artifacts

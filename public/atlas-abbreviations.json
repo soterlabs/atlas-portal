@@ -1,0 +1,394 @@
+{
+  "version": 2,
+  "corpusHash": "0571aec9a40b44cfd4818d077291c3ed0d034033eb17c965bf5b40f5c06fbe9c",
+  "entries": [
+    {
+      "acronym": "ac",
+      "phrases": [
+        "alignment conserver"
+      ],
+      "source": "curated"
+    },
+    {
+      "acronym": "ad",
+      "phrases": [
+        "aligned delegate"
+      ],
+      "source": "curated"
+    },
+    {
+      "acronym": "aep",
+      "phrases": [
+        "atlas edit proposal"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "alm",
+      "phrases": [
+        "asset liability management"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "asc",
+      "phrases": [
+        "actively stabilizing collateral"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "beam",
+      "phrases": [
+        "bounded external access modules"
+      ],
+      "source": "name-initialism"
+    },
+    {
+      "acronym": "ccr",
+      "phrases": [
+        "code complexity rating"
+      ],
+      "source": "name-initialism"
+    },
+    {
+      "acronym": "cf",
+      "phrases": [
+        "core facilitator"
+      ],
+      "source": "curated"
+    },
+    {
+      "acronym": "crr",
+      "phrases": [
+        "capital ratio requirement"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "dab",
+      "phrases": [
+        "demand absorption buffer"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "dc",
+      "phrases": [
+        "debt ceiling",
+        "delegate contract"
+      ],
+      "source": "curated"
+    },
+    {
+      "acronym": "dpau",
+      "phrases": [
+        "diamond pau"
+      ],
+      "source": "curated"
+    },
+    {
+      "acronym": "dsr",
+      "phrases": [
+        "dai savings rate"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "ead",
+      "phrases": [
+        "exposure at default"
+      ],
+      "source": "name-initialism"
+    },
+    {
+      "acronym": "ejrc",
+      "phrases": [
+        "external junior risk capital"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "epi",
+      "phrases": [
+        "external per internal"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "erg",
+      "phrases": [
+        "emergency response group"
+      ],
+      "source": "name-initialism"
+    },
+    {
+      "acronym": "esrc",
+      "phrases": [
+        "external senior risk capital"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "gsm",
+      "phrases": [
+        "governance security module"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "iam",
+      "phrases": [
+        "initial allocation mechanism"
+      ],
+      "source": "name-initialism"
+    },
+    {
+      "acronym": "icd",
+      "phrases": [
+        "instance configuration document"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "ijrc",
+      "phrases": [
+        "internal junior risk capital"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "isrc",
+      "phrases": [
+        "internal senior risk capital"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "jrc",
+      "phrases": [
+        "junior risk capital"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "kyc",
+      "phrases": [
+        "know your customer"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "laf",
+      "phrases": [
+        "lindy adjustment factor"
+      ],
+      "source": "name-initialism"
+    },
+    {
+      "acronym": "msc",
+      "phrases": [
+        "monthly settlement cycle"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "oft",
+      "phrases": [
+        "omnichain fungible token"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "osrc",
+      "phrases": [
+        "originated senior risk capital"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "ovrc",
+      "phrases": [
+        "on-chain verifiable risk capital"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "psm",
+      "phrases": [
+        "peg stability module"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "pt",
+      "phrases": [
+        "pendle principal tokens"
+      ],
+      "source": "curated"
+    },
+    {
+      "acronym": "rd",
+      "phrases": [
+        "ranked delegate"
+      ],
+      "source": "curated"
+    },
+    {
+      "acronym": "rf",
+      "phrases": [
+        "resilience fund"
+      ],
+      "source": "curated"
+    },
+    {
+      "acronym": "rrc",
+      "phrases": [
+        "required risk capital"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "saf",
+      "phrases": [
+        "spark assets foundation"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "sofr",
+      "phrases": [
+        "secured overnight financing rate"
+      ],
+      "source": "name-initialism"
+    },
+    {
+      "acronym": "sp",
+      "phrases": [
+        "sky protocol",
+        "sky primitives"
+      ],
+      "source": "curated"
+    },
+    {
+      "acronym": "spj",
+      "phrases": [
+        "senior per junior"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "sr",
+      "phrases": [
+        "staking rewards",
+        "savings rate"
+      ],
+      "source": "curated"
+    },
+    {
+      "acronym": "src",
+      "phrases": [
+        "senior risk capital"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "ssr",
+      "phrases": [
+        "sky savings rate"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "sta",
+      "phrases": [
+        "stability scope"
+      ],
+      "source": "curated"
+    },
+    {
+      "acronym": "sup",
+      "phrases": [
+        "support scope"
+      ],
+      "source": "curated"
+    },
+    {
+      "acronym": "svm",
+      "phrases": [
+        "solana virtual machine"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "tcc",
+      "phrases": [
+        "total cyclomatic complexity"
+      ],
+      "source": "name-initialism"
+    },
+    {
+      "acronym": "tdp",
+      "phrases": [
+        "total decision points"
+      ],
+      "source": "name-initialism"
+    },
+    {
+      "acronym": "tejrc",
+      "phrases": [
+        "tokenized external junior risk capital"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "tmf",
+      "phrases": [
+        "treasury management function"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "tor",
+      "phrases": [
+        "training and operational readiness"
+      ],
+      "source": "name-initialism"
+    },
+    {
+      "acronym": "trc",
+      "phrases": [
+        "total risk capital"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "tsrc",
+      "phrases": [
+        "total senior risk capital"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "uri",
+      "phrases": [
+        "usds rewards implementation"
+      ],
+      "source": "name-initialism"
+    },
+    {
+      "acronym": "wsl",
+      "phrases": [
+        "windows subsystem for linux"
+      ],
+      "source": "parenthetical"
+    },
+    {
+      "acronym": "wti",
+      "phrases": [
+        "west texas intermediate"
+      ],
+      "source": "parenthetical"
+    }
+  ]
+}

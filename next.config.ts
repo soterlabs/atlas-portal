@@ -12,10 +12,15 @@ function pinnedAtlasSha(): string | undefined {
   return typeof sha === 'string' && /^[0-9a-f]{40}$/.test(sha) ? sha : undefined;
 }
 const ATLAS_PINNED_SHA = pinnedAtlasSha();
+/** Whether this build ships the knowledge-graph artifact (optional; see docs/SEARCH_ARTIFACTS.md). */
+const SEARCH_GRAPH_SHIPPED = existsSync('public/atlas-graph.json') ? '1' : '0';
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  ...(ATLAS_PINNED_SHA ? { env: { ATLAS_PINNED_SHA } } : {}),
+  env: {
+    NEXT_PUBLIC_SEARCH_GRAPH: SEARCH_GRAPH_SHIPPED,
+    ...(ATLAS_PINNED_SHA ? { ATLAS_PINNED_SHA } : {}),
+  },
   reactStrictMode: true,
   typedRoutes: true,
   // The dense route imports transformers.js (and the Atlas page reaches its dynamic

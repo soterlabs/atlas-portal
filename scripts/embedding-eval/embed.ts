@@ -187,7 +187,9 @@ export async function embedPassagesIncremental(
   texts: string[],
   cacheName: string,
 ): Promise<{ vectors: Float32Array[]; embedded: number }> {
-  const cachePath = join(CACHE_DIR, `${cacheName}.bin`);
+  // Keyed by the inference stack too: a transformers.js / ONNX Runtime upgrade changes
+  // the vectors slightly, and queries are always embedded by the current stack.
+  const cachePath = join(CACHE_DIR, `${cacheName}-${inferenceStackTag()}.bin`);
   const metaPath = `${cachePath}.meta.json`;
   const cached = new Map<string, Float32Array>();
   if (existsSync(cachePath) && existsSync(metaPath)) {
@@ -219,4 +221,18 @@ export async function embedPassagesIncremental(
     writeFileSync(metaPath, JSON.stringify({ dims, hashes: unique.map(([hash]) => hash) }));
   }
   return { vectors, embedded: missing.length };
+}
+
+/** `tf<version>-ort<version>` of the installed transformers.js and onnxruntime-node. */
+export function inferenceStackTag(root: string = process.cwd()): string {
+  const version = (...segments: string[]): string => {
+    const manifest = join(root, 'node_modules', ...segments, 'package.json');
+    return existsSync(manifest) ? (JSON.parse(readFileSync(manifest, 'utf8')) as { version: string }).version : '';
+  };
+  const transformers = version('@huggingface', 'transformers') || 'unknown';
+  const ort =
+    version('@huggingface', 'transformers', 'node_modules', 'onnxruntime-node') ||
+    version('onnxruntime-node') ||
+    'unknown';
+  return `tf${transformers}-ort${ort}`;
 }

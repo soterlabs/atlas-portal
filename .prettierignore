@@ -65,3 +65,6 @@ public/atlas-abbreviations.json
 data/graphrag/*.json
 public/atlas-graph.json
 
+
+# Vendored model files: must stay byte-identical to the Hub originals (public/models/MODELS.sha256)
+public/models/

@@ -1,0 +1,76 @@
+name: Search paraphrase top-up
+
+# Weekly: write paraphrase expansions (data/search/expansions.json) for Atlas documents
+# that are new or changed since their last entry. Incremental by document hash and on the
+# providers' batch APIs, so a weekly run costs cents. Paid: runs only when a provider key
+# is configured (repo secret ANTHROPIC_API_KEY or OPENAI_API_KEY); otherwise it skips.
+# The result is proposed for review (branch + pull request), never committed to main.
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  schedule:
+    - cron: '17 14 * * 1' # Mondays 14:17 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: search-expansions
+  cancel-in-progress: false
+
+jobs:
+  top-up:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - name: Check for a provider key
+        id: key
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -n "${ANTHROPIC_API_KEY}${OPENAI_API_KEY}" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::No ANTHROPIC_API_KEY or OPENAI_API_KEY secret; skipping the paid paraphrase top-up."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.present == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.key.outputs.present == 'true'
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - name: Install dependencies
+        if: steps.key.outputs.present == 'true'
+        run: npm ci --ignore-scripts
+
+      # Against the live site's own corpus, so paraphrases match what production serves.
+      - name: Generate paraphrases for new and changed documents
+        if: steps.key.outputs.present == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: node_modules/.bin/tsx scripts/search-expansion/generate.ts https://sky-atlas.io/api/atlas.json --full
+
+      - name: Propose the update
+        if: steps.key.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- data/search/expansions.json; then echo "No new paraphrases."; exit 0; fi
+          branch="chore/search-expansions-$(date -u +%Y-%m-%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add data/search/expansions.json
+          git commit -m "Search: paraphrase top-up $(date -u +%Y-%m-%d)"
+          git push -u origin "$branch"
+          body="Weekly paraphrase top-up for new or changed Atlas documents (scripts/search-expansion/generate.ts). Review the diff of data/search/expansions.json: paraphrases must keep every qualifier and add no facts."
+          if ! gh pr create --base main --head "$branch" --title "Search: paraphrase top-up $(date -u +%Y-%m-%d)" --body "$body"; then
+            echo "::warning::Could not open a pull request (repository setting). Open one from: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/main...${branch}"
+          fi

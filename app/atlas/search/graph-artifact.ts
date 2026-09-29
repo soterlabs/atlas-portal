@@ -360,6 +360,9 @@ const GRAPH_FEATURES = 'the Related section, suggestion chips and definition ans
 
 /** The graph for exactly this tree, or null (absent, stale, malformed — never throws). */
 export async function tryLoadGraph(scopeTrees: unknown): Promise<AtlasGraph | null> {
+  // The build records whether it shipped the graph (next.config.ts); when it did not,
+  // skip the request instead of logging a 404 in every visitor's console.
+  if (process.env.NEXT_PUBLIC_SEARCH_GRAPH === '0') return null;
   try {
     // Fetch and shape-check FIRST, hash second — the abbreviation-artifact lesson.
     const response = await fetch(GRAPH_ARTIFACT_PATH);

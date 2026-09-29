@@ -1,0 +1,37 @@
+name: Search smoke test
+
+# After every successful Vercel deployment of this repo (preview and production), check
+# that search works on the deployment itself: pinned snapshot, artifacts, first-party
+# model/runtime files, and server-side dense search (scripts/smoke-search.mjs).
+# Only Soter Labs deployments are checked; other Vercel projects that happen to be
+# connected to this repo also report deployment statuses here.
+
+permissions:
+  contents: read
+
+on:
+  deployment_status:
+
+jobs:
+  smoke:
+    if: >-
+      github.event.deployment_status.state == 'success' &&
+      contains(github.event.deployment_status.environment_url || github.event.deployment_status.target_url, 'soter-labs.vercel.app')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.deployment.sha }}
+          sparse-checkout: |
+            scripts/smoke-search.mjs
+            .nvmrc
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+      - name: Smoke-test search on the deployment
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          DEPLOYMENT_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+        run: node scripts/smoke-search.mjs "$DEPLOYMENT_URL"

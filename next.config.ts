@@ -46,7 +46,17 @@ const nextConfig: NextConfig = {
   // (bin/napi-v6/<platform>/<arch>/), and the addon dlopens libonnxruntime.so.1, so
   // the tracer finds neither; ship the linux/x64 runtime Vercel functions execute on.
   outputFileTracingIncludes: {
-    '/api/search/dense': ['./public/models/**/*', './node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**/*'],
+    // transformers.js >= 4.3 loads onnxruntime-node through createRequire(import.meta.url),
+    // which the tracer cannot follow either: ship the package (JS + its CommonJS
+    // onnxruntime-common dependency) explicitly.
+    '/api/search/dense': [
+      './public/models/**/*',
+      './node_modules/onnxruntime-node/package.json',
+      './node_modules/onnxruntime-node/dist/**/*',
+      './node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**/*',
+      './node_modules/onnxruntime-common/package.json',
+      './node_modules/onnxruntime-common/dist/**/*',
+    ],
   },
   experimental: {
     typedEnv: true,

@@ -2,6 +2,9 @@ import path from 'path';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  // Unit tests never need the Tailwind/PostCSS pipeline; an inline config stops Vite from
+  // loading postcss.config.mjs (which fails to resolve under vitest) when a CSS module is imported.
+  css: { postcss: { plugins: [] } },
   esbuild: {
     jsx: 'automatic',
     jsxImportSource: 'react',

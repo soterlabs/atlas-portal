@@ -34,7 +34,7 @@ import { pipeline } from 'node:stream/promises';
 import { createGunzip } from 'node:zlib';
 import * as tar from 'tar';
 import { ATOMIZED, bucketFromFilename, detectLayout, loadComposed, resolveAtlasRoot } from './atlas-source';
-import { ATLAS_REPO_BRANCH, ATLAS_REPO_COMMITS_URL, ATLAS_REPO_TARBALL_URL } from './constants';
+import { ATLAS_REPO_COMMITS_URL, ATLAS_REPO_REF, ATLAS_REPO_TARBALL_URL } from './constants';
 
 export interface AtlasMarkdownFromGitHub {
   /** The composed markdown content (Sky Atlas monolith). */
@@ -135,7 +135,7 @@ async function refreshComposeCacheIfStale(): Promise<void> {
     const metadata = await fetchLatestCommitMetadata();
     if (composeCache === null || composeCache.sha !== metadata.commitSha) {
       console.log(
-        `[loadAtlasTree] refresh: composing from tarball at branch=${ATLAS_REPO_BRANCH} sha=${metadata.commitSha.slice(0, 8)}`,
+        `[loadAtlasTree] refresh: composing from tarball at ref=${ATLAS_REPO_REF.slice(0, 12)} sha=${metadata.commitSha.slice(0, 8)}`,
       );
       const content = await composeFromTarball();
       composeCache = { sha: metadata.commitSha, content, metadata };
@@ -478,7 +478,7 @@ async function coldStartCompose(): Promise<CacheEntry> {
     try {
       const metadata = await fetchLatestCommitMetadata();
       console.log(
-        `[loadAtlasTree] cold-start compose at branch=${ATLAS_REPO_BRANCH} sha=${metadata.commitSha.slice(0, 8)}`,
+        `[loadAtlasTree] cold-start compose at ref=${ATLAS_REPO_REF.slice(0, 12)} sha=${metadata.commitSha.slice(0, 8)}`,
       );
       const content = await composeFromTarball();
       const entry: CacheEntry = { sha: metadata.commitSha, content, metadata };

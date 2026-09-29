@@ -50,3 +50,21 @@ tests/fixtures/atlas-content-consolidated/
 tests/fixtures/atlas-content-expected.md
 tests/fixtures/atlas-content.tar.gz
 tests/fixtures/baseline-monolith.md
+
+# Machine-written search artifacts and their inputs; reformatting them just
+# reappears on the next build run.
+data/search/expansion-batch-requests.json
+data/search/expansions.json
+data/duplicate-census.json
+public/atlas-search-index.json
+public/atlas-search-vectors.json
+public/atlas-search-families.json
+public/atlas-abbreviations.json
+
+# Knowledge-graph data — imported byte-identical, never reformatted
+data/graphrag/*.json
+public/atlas-graph.json
+
+
+# Vendored model files: must stay byte-identical to the Hub originals (public/models/MODELS.sha256)
+public/models/

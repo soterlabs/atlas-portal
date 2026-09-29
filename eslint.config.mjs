@@ -38,6 +38,8 @@ const eslintConfig = defineConfig([
     'out/**',
     'build/**',
     'next-env.d.ts',
+    // ONNX Runtime Web files copied from node_modules at build (scripts/copy-ort-wasm.mjs).
+    'public/ort/**',
   ]),
 ]);
 

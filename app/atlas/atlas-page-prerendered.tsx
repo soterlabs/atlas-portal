@@ -6,31 +6,30 @@ import { ExportAtlasTreeDocument } from '@/app/server/atlas/export/types';
 import { type UuidMappings } from '@/app/server/atlas/load-uuid-mapping';
 import ContentTree from './content-tree';
 import MobileTopBar from './mobile-top-bar';
-import SearchModal from './search-modal';
+import { createSearchShortcutHandler } from './search-shortcuts';
+import SearchModal from './search/search-modal';
 import Sidebar from './sidebar';
 
 interface AtlasPagePrerenderedProps {
   exportScopeTreesWithoutAgents: ExportAtlasTreeDocument[];
   uuidMappings: UuidMappings;
+  queryRewriteEnabled: boolean;
+  answersEnabled?: boolean;
 }
 
 export default function AtlasPagePrerendered({
   exportScopeTreesWithoutAgents,
   uuidMappings,
+  queryRewriteEnabled,
+  answersEnabled = false,
 }: AtlasPagePrerenderedProps) {
   const [scopeTreesWithoutAgents] = useState(exportScopeTreesWithoutAgents);
   const { isOpen: isSearchOpen, onOpen: onSearchOpen, onClose: onSearchClose } = useDisclosure();
 
-  // Handle CMD+F / Ctrl+F keyboard shortcut to open search (single handler for entire page)
+  // Search shortcuts (SEARCH-33): CMD/Ctrl+K and "/" — Ctrl/Cmd+F belongs to the
+  // browser again. Behavior lives in createSearchShortcutHandler (unit-tested).
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Check for CMD+F (Mac) or Ctrl+F (Windows/Linux)
-      if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
-        event.preventDefault(); // Prevent browser's default find
-        onSearchOpen();
-      }
-    };
-
+    const handleKeyDown = createSearchShortcutHandler(onSearchOpen);
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onSearchOpen]);
@@ -46,9 +45,10 @@ export default function AtlasPagePrerendered({
       {/* Single SearchModal instance for the entire page */}
       <SearchModal
         scopeTrees={scopeTreesWithoutAgents}
-        uuidMappings={uuidMappings}
         isOpen={isSearchOpen}
         onClose={onSearchClose}
+        queryRewriteEnabled={queryRewriteEnabled}
+        answersEnabled={answersEnabled}
       />
     </div>
   );

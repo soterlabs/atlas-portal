@@ -1,0 +1,20 @@
+{
+  "comment": "Hand-reviewed abbreviation curation. exclude: harvested initialisms whose string carries a more general meaning than the harvested phrase. override: the Atlas's own recorded meaning wins (truncation-style abbreviations the initials-verified harvest cannot accept). add: acronyms readers type although the text never spells them that way; two-letter acronyms enter the table only here.",
+  "exclude": ["aaa", "aem", "ldr", "sec", "url"],
+  "override": {
+    "sta": "stability scope",
+    "sup": "support scope"
+  },
+  "add": {
+    "dpau": "diamond pau",
+    "ad": "aligned delegate",
+    "ac": "alignment conserver",
+    "rd": "ranked delegate",
+    "rf": "resilience fund",
+    "pt": "pendle principal tokens",
+    "cf": "core facilitator",
+    "sr": ["staking rewards", "savings rate"],
+    "dc": ["debt ceiling", "delegate contract"],
+    "sp": ["sky protocol", "sky primitives"]
+  }
+}

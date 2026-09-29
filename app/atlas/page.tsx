@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { loadAtlasPortalData } from '@/app/server/atlas/load-atlas-portal-data';
+import { searchAnswersConfigured } from '@/app/server/search-answer/config';
+import { queryRewriteConfigured } from '@/app/server/search-query-rewrite/config';
 import AtlasPagePrerendered from './atlas-page-prerendered';
 
 // Force the route static so Vercel's CDN absorbs transient render-path
@@ -27,5 +29,12 @@ export const metadata: Metadata = {
 export default async function Page() {
   const { exportScopeTrees, uuidMappings } = await loadAtlasPortalData();
 
-  return <AtlasPagePrerendered exportScopeTreesWithoutAgents={exportScopeTrees} uuidMappings={uuidMappings} />;
+  return (
+    <AtlasPagePrerendered
+      exportScopeTreesWithoutAgents={exportScopeTrees}
+      uuidMappings={uuidMappings}
+      queryRewriteEnabled={queryRewriteConfigured()}
+      answersEnabled={searchAnswersConfigured()}
+    />
+  );
 }

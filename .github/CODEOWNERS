@@ -1,4 +1,4 @@
 # CODEOWNERS — auto-requests a reviewer on every PR so portal changes get timely eyes.
 # CODEOWNERS is skipped for the PR author, so this will NOT request Adam on his own PRs.
-# Broaden to an @Atlas-Axis/<team> later if you want others able to cover.
+# Broaden to an @soterlabs/<team> later if you want others able to cover.
 *  @adamgfraser

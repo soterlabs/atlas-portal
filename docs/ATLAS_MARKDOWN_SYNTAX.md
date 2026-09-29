@@ -419,7 +419,7 @@ When editing the Atlas Markdown:
 
 ### Validation Tool
 
-The [Atlas Validator project](https://github.com/Atlas-Axis/atlas-validator) includes a command-line validator script that can check Atlas Markdown files for syntax errors and structural issues:
+The [Atlas Validator project](https://github.com/soterlabs/atlas-validator) includes a command-line validator script that can check Atlas Markdown files for syntax errors and structural issues:
 
 ```bash
 npx tsx scripts/validate-atlas-markdown.ts [file-path]

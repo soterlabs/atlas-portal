@@ -1,0 +1,5 @@
+fa73f90bf92c8cace1fbcb709626306f2bdbc9ea3e5b5f94b440df9b6aa56350  Xenova/bge-small-en-v1.5/config.json
+b6d346be366a7d1d48332dbc9fdf3bf8960b5d879522b7799ddba59e76237ee3  Xenova/bge-small-en-v1.5/special_tokens_map.json
+d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66  Xenova/bge-small-en-v1.5/tokenizer.json
+9261e7d79b44c8195c1cada2b453e55b00aeb81e907a6664974b4d7776172ab3  Xenova/bge-small-en-v1.5/tokenizer_config.json
+6c9c6101a956d62dfb5e7190c538226c0c5bb9cb27b651234b6df063ee7dbfe4  Xenova/bge-small-en-v1.5/onnx/model_quantized.onnx

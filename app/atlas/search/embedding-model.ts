@@ -30,17 +30,57 @@ type Extractor = (
   options: { pooling: 'cls'; normalize: boolean },
 ) => Promise<{ data: Float32Array; dispose?: () => void }>;
 
+/**
+ * The model is vendored, never fetched from the Hugging Face Hub at runtime: the files
+ * under `public/models/<repo>/` are pinned to this Hub commit and listed with their
+ * SHA-256 in `public/models/MODELS.sha256` (checked by `embedding-model-files.test.ts`).
+ * To upgrade, download the same five files at a new commit and update both.
+ */
+export const QUERY_EMBEDDING_MODEL_REVISION = 'ea104dacec62c0de699686887e3f920caeb4f3e3';
+
+/** Same-origin path the ONNX Runtime Web files are copied to (`scripts/copy-ort-wasm.mjs`). */
+export const ORT_WASM_PUBLIC_PATH = '/ort/';
+
+type TransformersEnv = {
+  allowRemoteModels: boolean;
+  allowLocalModels: boolean;
+  localModelPath: string;
+  backends?: { onnx?: { wasm?: { wasmPaths?: string | Record<string, string> } } };
+};
+
+/**
+ * Points transformers.js at first-party files only: the vendored model (browser: served
+ * from `/models/`; server: read from the deployment's `public/models/`, which
+ * `next.config.ts` traces into the dense route) and, in the browser, the ONNX Runtime
+ * Web loader + WASM from `/ort/` instead of cdn.jsdelivr.net. Keeps transformers.js's
+ * own choice of runtime variant (it picks a Safari build) and only swaps the origin.
+ */
+export function configureFirstPartyAssets(env: TransformersEnv): void {
+  env.allowRemoteModels = false;
+  env.allowLocalModels = true;
+  if (typeof window === 'undefined') {
+    env.localModelPath = `${process.cwd()}/public/models/`;
+    return;
+  }
+  env.localModelPath = '/models/';
+  const wasm = env.backends?.onnx?.wasm;
+  if (!wasm) return;
+  const paths = wasm.wasmPaths;
+  if (paths && typeof paths === 'object') {
+    wasm.wasmPaths = Object.fromEntries(
+      Object.entries(paths).map(([kind, url]) => [kind, `${ORT_WASM_PUBLIC_PATH}${url.split('/').pop()}`]),
+    );
+  } else {
+    wasm.wasmPaths = ORT_WASM_PUBLIC_PATH;
+  }
+}
+
 let extractorPromise: Promise<Extractor> | null = null;
 
 function loadExtractor(): Promise<Extractor> {
   extractorPromise ??= import('@huggingface/transformers')
     .then(({ env, pipeline }) => {
-      // Vercel's deployed function bundle is read-only. A clean cold start without
-      // build-cached model files must cache the remote model in writable ephemeral
-      // storage; subsequent calls in the same instance reuse the pipeline singleton.
-      if (typeof window === 'undefined' && process.env.VERCEL === '1') {
-        env.cacheDir = '/tmp/atlas-transformers-cache';
-      }
+      configureFirstPartyAssets(env as unknown as TransformersEnv);
       return pipeline('feature-extraction', QUERY_EMBEDDING_MODEL.repo, {
         dtype: QUERY_EMBEDDING_MODEL.dtype,
       }) as Promise<Extractor>;

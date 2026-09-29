@@ -8,8 +8,19 @@ const nextConfig: NextConfig = {
   // import transitively), whose default model cache lives inside its package directory.
   // Never trace that cache into any server bundle: a refresh-then-build deploy would
   // otherwise ship hundreds of MB of model files.
+  // Vercel functions run on linux/x64: the win32/darwin ONNX Runtime binaries are dead
+  // weight against the function size limit.
   outputFileTracingExcludes: {
-    '*': ['./node_modules/@huggingface/transformers/.cache/**/*'],
+    '*': [
+      './node_modules/@huggingface/transformers/.cache/**/*',
+      './node_modules/onnxruntime-node/bin/napi-v6/win32/**/*',
+      './node_modules/onnxruntime-node/bin/napi-v6/darwin/**/*',
+    ],
+  },
+  // The dense route embeds queries with the vendored model (see
+  // app/atlas/search/embedding-model.ts); `public/` is not in function bundles by default.
+  outputFileTracingIncludes: {
+    '/api/search/dense': ['./public/models/**/*'],
   },
   experimental: {
     typedEnv: true,

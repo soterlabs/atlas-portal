@@ -80,3 +80,6 @@ data/search/query-rewrite-cache.json
 
 # Sibling temp files of the atomic artifact writes (scripts/build-search-vectors.ts)
 public/*.tmp
+
+# ONNX Runtime Web loader + WASM, copied from node_modules by scripts/copy-ort-wasm.mjs (predev/prebuild)
+public/ort/

@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { QUERY_EMBEDDING_MODEL, embedQueryLocal } from '../embedding-model';
+import {
+  ORT_WASM_PUBLIC_PATH,
+  QUERY_EMBEDDING_MODEL,
+  configureFirstPartyAssets,
+  embedQueryLocal,
+} from '../embedding-model';
 
 const model = vi.hoisted(() => ({
   data: new Float32Array(384),
@@ -40,5 +45,47 @@ describe('embedQueryLocal', () => {
     controller.abort();
     await expect(embedQueryLocal('stale query', controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
     expect(model.extract).not.toHaveBeenCalled();
+  });
+});
+
+describe('configureFirstPartyAssets', () => {
+  const jsdelivr = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/';
+
+  it('in the browser, disables the Hub and moves the ONNX Runtime files to /ort/, keeping the chosen variant', () => {
+    const env = {
+      allowRemoteModels: true,
+      allowLocalModels: false,
+      localModelPath: '',
+      backends: {
+        onnx: {
+          wasm: {
+            wasmPaths: {
+              mjs: `${jsdelivr}ort-wasm-simd-threaded.asyncify.mjs`,
+              wasm: `${jsdelivr}ort-wasm-simd-threaded.asyncify.wasm`,
+            } as string | Record<string, string>,
+          },
+        },
+      },
+    };
+    configureFirstPartyAssets(env);
+    expect(env.allowRemoteModels).toBe(false);
+    expect(env.allowLocalModels).toBe(true);
+    expect(env.localModelPath).toBe('/models/');
+    expect(env.backends?.onnx.wasm.wasmPaths).toEqual({
+      mjs: `${ORT_WASM_PUBLIC_PATH}ort-wasm-simd-threaded.asyncify.mjs`,
+      wasm: `${ORT_WASM_PUBLIC_PATH}ort-wasm-simd-threaded.asyncify.wasm`,
+    });
+  });
+
+  it('on the server, reads the vendored model from the deployment and never the Hub', () => {
+    vi.stubGlobal('window', undefined);
+    try {
+      const env = { allowRemoteModels: true, allowLocalModels: false, localModelPath: '', backends: {} };
+      configureFirstPartyAssets(env);
+      expect(env.allowRemoteModels).toBe(false);
+      expect(env.localModelPath).toBe(`${process.cwd()}/public/models/`);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

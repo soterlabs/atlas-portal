@@ -28,8 +28,11 @@ const nextConfig: NextConfig = {
   },
   // The dense route embeds queries with the vendored model (see
   // app/atlas/search/embedding-model.ts); `public/` is not in function bundles by default.
+  // onnxruntime-node loads its native addon by a runtime-built path
+  // (bin/napi-v6/<platform>/<arch>/), and the addon dlopens libonnxruntime.so.1, so
+  // the tracer finds neither; ship the linux/x64 runtime Vercel functions execute on.
   outputFileTracingIncludes: {
-    '/api/search/dense': ['./public/models/**/*'],
+    '/api/search/dense': ['./public/models/**/*', './node_modules/onnxruntime-node/bin/napi-v6/linux/x64/**/*'],
   },
   experimental: {
     typedEnv: true,

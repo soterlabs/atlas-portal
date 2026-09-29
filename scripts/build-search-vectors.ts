@@ -15,12 +15,11 @@
  *     # default http://localhost:3000/api/atlas.json
  */
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { flattenAtlasDocuments } from '../app/atlas/search/flatten-documents';
 import { type VectorManifest, VectorStore } from '../app/atlas/search/vector-store';
 import type { ExportAtlasTreeDocument } from '../app/server/atlas/export/types';
-import { CACHE_DIR, embedTexts } from './embedding-eval/embed';
+import { embedPassagesIncremental } from './embedding-eval/embed';
 import { type ModelSpec, modelByKey } from './embedding-eval/models';
 import { buildEmbeddedText } from './embedding-eval/text-variants';
 
@@ -39,50 +38,13 @@ export const VECTOR_MODEL_KEY = 'bge-small';
 
 /**
  * Embeds the corpus incrementally (D3, mirroring the expansion store): vectors are
- * cached per document, keyed by the SHA-256 of the embedded text, so a small weekly
- * diff re-embeds only the changed documents (seconds) instead of the whole corpus
- * (minutes). The cache is pruned to the current corpus on every write. The packed
- * artifact is still re-emitted in full — row order and the u8 quantisation statistics
- * are whole-corpus properties, but packing cached vectors costs only seconds.
+ * cached per document, keyed by the SHA-256 of the embedded text, so a small Atlas diff
+ * re-embeds only the changed documents. The packed artifact is still re-emitted in
+ * full — row order and the u8 quantisation statistics are whole-corpus properties.
  */
 async function embedDocumentsIncremental(spec: ModelSpec, texts: string[]): Promise<Float32Array[]> {
-  const cachePath = join(CACHE_DIR, `doc-vectors-${spec.key}.bin`);
-  const metaPath = `${cachePath}.meta.json`;
-
-  const cached = new Map<string, Float32Array>();
-  if (existsSync(cachePath) && existsSync(metaPath)) {
-    const meta = JSON.parse(readFileSync(metaPath, 'utf8')) as { dims: number; hashes: string[] };
-    const buffer = readFileSync(cachePath);
-    const flat = new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4);
-    meta.hashes.forEach((hash, row) => {
-      cached.set(hash, new Float32Array(flat.subarray(row * meta.dims, (row + 1) * meta.dims)));
-    });
-  }
-
-  const hashes = texts.map((text) => createHash('sha256').update(text).digest('hex'));
-  const missing = hashes.map((hash, index) => ({ hash, index })).filter(({ hash }) => !cached.has(hash));
-  if (missing.length > 0) {
-    const embedded = await embedTexts(
-      spec,
-      missing.map(({ index }) => texts[index]),
-      'passage',
-    );
-    missing.forEach(({ hash }, position) => cached.set(hash, embedded[position]));
-  }
-  console.log(`Embeddings: ${texts.length - missing.length} from the document cache, ${missing.length} embedded.`);
-
-  const vectors = hashes.map((hash) => cached.get(hash)!);
-
-  // Persist exactly the current corpus's vectors, deduplicated by text hash.
-  const dims = vectors[0]?.length ?? 0;
-  if (dims > 0) {
-    const unique = [...new Map(hashes.map((hash) => [hash, cached.get(hash)!]))];
-    const flat = new Float32Array(unique.length * dims);
-    unique.forEach(([, vector], row) => flat.set(vector, row * dims));
-    mkdirSync(dirname(cachePath), { recursive: true });
-    writeFileSync(cachePath, Buffer.from(flat.buffer));
-    writeFileSync(metaPath, JSON.stringify({ dims, hashes: unique.map(([hash]) => hash) }));
-  }
+  const { vectors, embedded } = await embedPassagesIncremental(spec, texts, `doc-vectors-${spec.key}`);
+  console.log(`Embeddings: ${texts.length - embedded} from the document cache, ${embedded} embedded.`);
   return vectors;
 }
 

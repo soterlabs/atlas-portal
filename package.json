@@ -5,7 +5,7 @@
   "scripts": {
     "predev": "node scripts/copy-ort-wasm.mjs",
     "dev": "NODE_ENV=development next dev --turbopack",
-    "prebuild": "node scripts/copy-ort-wasm.mjs",
+    "prebuild": "node scripts/prebuild.mjs",
     "build": "NODE_ENV=production next build --turbopack",
     "start": "next start",
     "lint": "eslint",

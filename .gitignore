@@ -83,3 +83,14 @@ public/*.tmp
 
 # ONNX Runtime Web loader + WASM, copied from node_modules by scripts/copy-ort-wasm.mjs (predev/prebuild)
 public/ort/
+
+# Search artifacts + Atlas pin: generated on every build by scripts/prebuild.mjs from one
+# pinned Atlas commit (never committed — a committed copy goes stale with the Atlas).
+/.atlas-snapshot.json
+public/atlas-snapshot.json
+public/atlas-search-index.json
+public/atlas-search-vectors.json
+public/atlas-search-vectors.bin
+public/atlas-search-families.json
+public/atlas-abbreviations.json
+data/duplicate-census.json

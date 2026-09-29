@@ -44,13 +44,25 @@ export const ATLAS_REPO_NAME = 'next-gen-atlas';
 export const ATLAS_REPO_BRANCH = 'main';
 
 /**
+ * The Atlas commit this deployment serves, pinned at build time by
+ * `scripts/pin-atlas-snapshot.mjs` (inlined through `next.config.ts`). The page, the
+ * `/api/atlas.*` exports and the search artifacts are all built from this one commit,
+ * so the served text and the search index can never disagree. Unset (local dev,
+ * tests) → the live branch head.
+ */
+export function atlasRepoRef(pinned: string | undefined = process.env.ATLAS_PINNED_SHA): string {
+  return pinned && /^[0-9a-f]{40}$/.test(pinned) ? pinned : ATLAS_REPO_BRANCH;
+}
+export const ATLAS_REPO_REF = atlasRepoRef();
+
+/**
  * GitHub API URL for downloading the repo as a tarball at the given branch.
  *
  * The portal extracts this tarball, walks its `content/` directory, and composes
  * the decomposed Atlas tree back into a monolithic markdown stream — replacing
  * the older direct-fetch of `Sky Atlas/Sky Atlas.md`.
  */
-export const ATLAS_REPO_TARBALL_URL = `https://api.github.com/repos/${ATLAS_REPO_OWNER}/${ATLAS_REPO_NAME}/tarball/${ATLAS_REPO_BRANCH}`;
+export const ATLAS_REPO_TARBALL_URL = `https://api.github.com/repos/${ATLAS_REPO_OWNER}/${ATLAS_REPO_NAME}/tarball/${ATLAS_REPO_REF}`;
 
 /**
  * GitHub API URL for the latest commit on the canonical branch.
@@ -58,4 +70,4 @@ export const ATLAS_REPO_TARBALL_URL = `https://api.github.com/repos/${ATLAS_REPO
  * Used to derive a SHA for cache invalidation: when the SHA changes, the
  * tarball is re-fetched and the composed monolith is recomputed.
  */
-export const ATLAS_REPO_COMMITS_URL = `https://api.github.com/repos/${ATLAS_REPO_OWNER}/${ATLAS_REPO_NAME}/commits/${ATLAS_REPO_BRANCH}`;
+export const ATLAS_REPO_COMMITS_URL = `https://api.github.com/repos/${ATLAS_REPO_OWNER}/${ATLAS_REPO_NAME}/commits/${ATLAS_REPO_REF}`;

@@ -13,26 +13,34 @@ parsed Atlas tree it was built from. When the deployed Atlas moves, every artifa
 | `atlas-abbreviations.json`        | acronym expansion turns off                                                   |
 | `atlas-graph.json`                | Related section, suggestion chips and definition answers turn off (see below) |
 
-## The rule: refresh before every deploy, check in CI
+## How they stay fresh: built on every deploy, from one pinned Atlas commit
 
-```bash
-npm run search:refresh-artifacts     # composes the current Atlas from GitHub, rebuilds all, verifies
-npm run search:check-artifacts       # exit 1 with both hashes named when anything is stale
-```
+`npm run build` runs `scripts/prebuild.mjs` first, which:
 
-Run the refresh as the last step before a deploy and commit its output. The Atlas
-changes every few days, so this is a standing operation, not a one-time step. The
-`search-artifacts` job in `.github/workflows/ci.yml` runs the check so a stale deploy
-fails loudly instead of shipping degraded.
+1. **Pins the Atlas**: resolves the head of `sky-ecosystem/next-gen-atlas` once and writes it
+   to `.atlas-snapshot.json`. `next.config.ts` inlines it as `ATLAS_PINNED_SHA`, so the page
+   and `/api/atlas.*` serve exactly that commit (`atlasRepoRef` in
+   `app/server/atlas/constants.ts`). It is also published as `/atlas-snapshot.json`.
+2. **Builds all artifacts from that commit** (`scripts/refresh-search-artifacts.ts`). Document
+   and census embeddings are cached per text under `.next/cache/search-embeddings`, which
+   Vercel keeps between builds: a first build embeds everything (~5 min), later builds only
+   the changed documents (seconds).
+3. Copies the ONNX Runtime Web files to `public/ort/`.
 
-Without an argument the checker, and therefore the CI job, compares the artifacts with
-`https://sky-atlas.io/api/atlas.json`. If that is not your production deployment, pass
-your own `/api/atlas.json` URL (or a JSON path): `npm run search:check-artifacts -- <url>`.
+The artifacts and the snapshot are generated, gitignored and never committed, so the page and
+search can never disagree.
 
-`GITHUB_TOKEN` (in `.env.local`) is optional but raises the GitHub rate limit for the
-compose step. The vector build downloads the embedding model from huggingface.co on
-first run (about 35 MB, cached under `.cache/transformers/`, override with
-`TRANSFORMERS_CACHE_DIR`). No OpenAI or Anthropic key is needed.
+**Redeploys follow the Atlas.** `.github/workflows/redeploy-on-atlas-change.yml` runs every 15
+minutes, compares `https://sky-atlas.io/atlas-snapshot.json` with the Atlas head, and calls the
+Vercel deploy hook (repo secret `VERCEL_DEPLOY_HOOK_URL`) once per new Atlas commit.
+
+**Local builds:** `npm run build` (with lifecycle scripts enabled) does all of the above;
+`SKIP_SEARCH_ARTIFACTS=1` skips the artifact step, `ATLAS_PINNED_SHA=<sha>` builds a specific
+commit. For `npm run dev`, run `npm run search:refresh-artifacts` once to get local artifacts
+(`npm run search:check-artifacts` reports whether they match the live Atlas).
+
+The embedding model is vendored under `public/models/` (pinned, SHA-256 in
+`public/models/MODELS.sha256`); neither builds nor the site fetch it from Hugging Face.
 
 ## Individual builders
 
@@ -65,6 +73,6 @@ paraphrases (search still finds them). To top up, set `OPENAI_API_KEY` or
 ## Configuration knobs (build time)
 
 `NEXT_PUBLIC_SEARCH_MODE` (`auto` default, `local`, `low-memory`) is inlined at build
-time. Phones and low-memory devices use the server route `/api/search/dense`, which
-needs outbound access to huggingface.co on cold start (or a self-hosted model path).
+time. Phones and low-memory devices use the server route `/api/search/dense`, which loads the
+vendored model from the deployment (no outbound model download).
 Artifact loading needs a secure context (WebCrypto): serve over HTTPS only.

@@ -97,20 +97,19 @@ async function main(): Promise<void> {
 
   let cosine: { model: string; vectors: Float32Array[] } | undefined;
   if (options.withCosine) {
-    const { embedTexts } = await import('./embedding-eval/embed');
+    const { embedPassagesIncremental } = await import('./embedding-eval/embed');
     const { modelByKey } = await import('./embedding-eval/models');
     const { buildEmbeddedText } = await import('./embedding-eval/text-variants');
     const spec = modelByKey('bge-small');
-    // Same cache-key convention as embedding-eval/run.ts (hash of the parsed tree), so
-    // the census and the evaluation share one vector cache.
-    const vectorCorpusHash = createHash('sha256').update(JSON.stringify(scopeTrees)).digest('hex');
-    console.log(`Embedding bodies with ${spec.key} for definition 4 (cached after the first run) …`);
-    const vectors = await embedTexts(
+    // Cached per document body (text hash), so a rebuild after a small Atlas change
+    // re-embeds only the changed bodies — this runs on every deploy.
+    console.log(`Embedding bodies with ${spec.key} for definition 4 (incremental cache) …`);
+    const { vectors, embedded } = await embedPassagesIncremental(
       spec,
       documents.map((doc) => buildEmbeddedText(doc, 'body')),
-      'passage',
-      `body-${vectorCorpusHash.slice(0, 12)}`,
+      `census-body-${spec.key}`,
     );
+    console.log(`  ${documents.length - embedded} bodies from the cache, ${embedded} embedded.`);
     cosine = { model: spec.key, vectors };
   }
 

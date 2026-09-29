@@ -1,0 +1,72 @@
+name: Redeploy on Atlas change
+
+# Every deployment pins one Atlas commit and builds the page, the /api/atlas.* exports
+# and the search artifacts from it (scripts/prebuild.mjs). This keeps production on the
+# latest Atlas: when the head of sky-ecosystem/next-gen-atlas differs from the commit
+# the live site was built from, it calls the Vercel deploy hook, once per Atlas commit.
+
+permissions:
+  contents: read
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: redeploy-on-atlas-change
+  cancel-in-progress: false
+
+jobs:
+  redeploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Compare the live snapshot with the Atlas head
+        id: compare
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          head=$(gh api repos/sky-ecosystem/next-gen-atlas/commits/main --jq .sha)
+          live=$(curl -fsS https://sky-atlas.io/atlas-snapshot.json | jq -r .sha || true)
+          echo "Atlas head ${head}"
+          echo "Live site  ${live:-<unavailable>}"
+          if [ -z "${live}" ] || [ "${live}" = "null" ]; then
+            echo "::warning::Could not read https://sky-atlas.io/atlas-snapshot.json; not redeploying."
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+          elif [ "${live}" = "${head}" ]; then
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "head=${head}" >> "$GITHUB_OUTPUT"
+
+      # One deploy per Atlas commit: a build takes several minutes, so without this
+      # marker the next runs would queue duplicate deploys of the same commit.
+      - name: Check whether this commit was already deployed
+        if: steps.compare.outputs.stale == 'true'
+        id: marker
+        uses: actions/cache/restore@v4
+        with:
+          path: .redeploy-marker
+          key: redeploy-${{ steps.compare.outputs.head }}
+          lookup-only: true
+
+      - name: Trigger the Vercel deploy hook
+        if: steps.compare.outputs.stale == 'true' && steps.marker.outputs.cache-hit != 'true'
+        env:
+          DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DEPLOY_HOOK}" ]; then echo "::error::VERCEL_DEPLOY_HOOK_URL is not set"; exit 1; fi
+          curl -fsS -X POST "${DEPLOY_HOOK}" > /dev/null
+          echo "Redeploy triggered for Atlas ${{ steps.compare.outputs.head }}"
+          echo "${{ steps.compare.outputs.head }}" > .redeploy-marker
+
+      - name: Remember the deployed commit
+        if: steps.compare.outputs.stale == 'true' && steps.marker.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .redeploy-marker
+          key: redeploy-${{ steps.compare.outputs.head }}

@@ -1,7 +1,21 @@
 import type { NextConfig } from 'next';
+import { existsSync, readFileSync } from 'node:fs';
+
+/**
+ * The Atlas commit pinned by scripts/prebuild.mjs. Inlined so the page, the
+ * /api/atlas.* exports and the search artifacts all serve the same snapshot
+ * (see atlasRepoRef in app/server/atlas/constants.ts). Absent → live branch head.
+ */
+function pinnedAtlasSha(): string | undefined {
+  if (!existsSync('.atlas-snapshot.json')) return undefined;
+  const { sha } = JSON.parse(readFileSync('.atlas-snapshot.json', 'utf8')) as { sha?: string };
+  return typeof sha === 'string' && /^[0-9a-f]{40}$/.test(sha) ? sha : undefined;
+}
+const ATLAS_PINNED_SHA = pinnedAtlasSha();
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  ...(ATLAS_PINNED_SHA ? { env: { ATLAS_PINNED_SHA } } : {}),
   reactStrictMode: true,
   typedRoutes: true,
   // The dense route imports transformers.js (and the Atlas page reaches its dynamic

@@ -131,7 +131,7 @@ async function main(): Promise<void> {
   console.log(
     graphPinned
       ? '\nRefresh complete (graph pinned, tolerated). Commit the refreshed artifacts and open a pull request.'
-      : '\nRefresh complete. Commit the refreshed artifacts and open a pull request.',
+      : '\nRefresh complete. (In a build these artifacts ship with the deployment; they are not committed.)',
   );
 }
 

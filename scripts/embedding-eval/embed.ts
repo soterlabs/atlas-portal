@@ -174,3 +174,49 @@ export function topK(
   scored.sort((a, b) => b.score - a.score);
   return scored.slice(0, k);
 }
+
+/**
+ * Embeds passages incrementally: vectors are cached per text, keyed by the SHA-256 of
+ * the embedded text, under `<CACHE_DIR>/<cacheName>.bin` (+ `.meta.json`). A small Atlas
+ * diff re-embeds only the changed texts (seconds) instead of the whole corpus (minutes).
+ * The cache is pruned to the current texts on every write. Used by the per-build
+ * artifact steps (document vectors, duplicate census), which run on every deploy.
+ */
+export async function embedPassagesIncremental(
+  spec: ModelSpec,
+  texts: string[],
+  cacheName: string,
+): Promise<{ vectors: Float32Array[]; embedded: number }> {
+  const cachePath = join(CACHE_DIR, `${cacheName}.bin`);
+  const metaPath = `${cachePath}.meta.json`;
+  const cached = new Map<string, Float32Array>();
+  if (existsSync(cachePath) && existsSync(metaPath)) {
+    const meta = JSON.parse(readFileSync(metaPath, 'utf8')) as { dims: number; hashes: string[] };
+    const buffer = readFileSync(cachePath);
+    const flat = new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4);
+    meta.hashes.forEach((hash, row) => {
+      cached.set(hash, new Float32Array(flat.subarray(row * meta.dims, (row + 1) * meta.dims)));
+    });
+  }
+  const hashes = texts.map((text) => createHash('sha256').update(text).digest('hex'));
+  const missing = hashes.map((hash, index) => ({ hash, index })).filter(({ hash }) => !cached.has(hash));
+  if (missing.length > 0) {
+    const embedded = await embedTexts(
+      spec,
+      missing.map(({ index }) => texts[index]),
+      'passage',
+    );
+    missing.forEach(({ hash }, position) => cached.set(hash, embedded[position]));
+  }
+  const vectors = hashes.map((hash) => cached.get(hash)!);
+  const dims = vectors[0]?.length ?? 0;
+  if (dims > 0) {
+    const unique = [...new Map(hashes.map((hash) => [hash, cached.get(hash)!]))];
+    const flat = new Float32Array(unique.length * dims);
+    unique.forEach(([, vector], row) => flat.set(vector, row * dims));
+    mkdirSync(dirname(cachePath), { recursive: true });
+    writeFileSync(cachePath, Buffer.from(flat.buffer));
+    writeFileSync(metaPath, JSON.stringify({ dims, hashes: unique.map(([hash]) => hash) }));
+  }
+  return { vectors, embedded: missing.length };
+}

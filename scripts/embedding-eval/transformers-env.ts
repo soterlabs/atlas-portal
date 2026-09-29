@@ -16,5 +16,9 @@ export function resolveTransformersCacheDir(env: Record<string, string | undefin
 export async function loadTransformers(): Promise<typeof import('@huggingface/transformers')> {
   const transformers = await import('@huggingface/transformers');
   transformers.env.cacheDir = resolveTransformersCacheDir(process.env, process.cwd());
+  // Models vendored for the portal (public/models/, pinned + hashed) load from disk, so
+  // artifact builds never fetch them; other evaluation models still come from the Hub.
+  transformers.env.allowLocalModels = true;
+  transformers.env.localModelPath = `${path.join(process.cwd(), 'public', 'models')}/`;
   return transformers;
 }

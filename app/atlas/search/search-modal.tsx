@@ -1666,27 +1666,6 @@ export default function SearchModal({
     listRef.current?.querySelector('[data-result-index="0"]')?.scrollIntoView({ block: 'nearest' });
   }, [resultsKey]);
 
-  // Focus the input once the modal has rendered, retrying if the modal steals focus.
-  // Never steal focus the *user* placed: if another interactive element inside the
-  // modal is focused (the Section ▾ filter, a pill, a tree node), leave it alone —
-  // grabbing it back closed the Tools popovers mid-typing (SEARCH-34).
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const attemptFocus = (attempt = 0) => {
-      const active = document.activeElement;
-      const userIsElsewhere = active instanceof HTMLElement && active !== document.body && active !== inputRef.current;
-      if (userIsElsewhere) return;
-      inputRef.current?.focus();
-      if (document.activeElement !== inputRef.current && attempt < 3) {
-        setTimeout(() => attemptFocus(attempt + 1), 500);
-      }
-    };
-
-    const timeoutId = setTimeout(attemptFocus, 50);
-    return () => clearTimeout(timeoutId);
-  }, [isOpen]);
-
   useEffect(
     () => () => {
       rewriteRequestRef.current?.controller.abort();
@@ -1994,6 +1973,7 @@ export default function SearchModal({
         >
           <Input
             ref={inputRef}
+            autoFocus
             placeholder="Search Atlas documents..."
             value={query}
             onChange={(event) => replaceQuery(event.target.value)}

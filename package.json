@@ -62,7 +62,7 @@
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.1",
+    "@testing-library/user-event": "^14.6.7",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/archiver": "^7.0.0",
     "@types/diff": "^7.0.2",

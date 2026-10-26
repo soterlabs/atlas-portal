@@ -82,6 +82,26 @@ describe('isExactMatch (SEARCH-70/81: unordered window, k=2, per-field, word-for
   });
 });
 
+describe('document-number exactness', () => {
+  const document = flattenAtlasDocuments([
+    createDoc('Core', 'A.2.2.10.1.1.1.3.3', 'Timelock Requirements', 'Minimum delays for protected functions.'),
+  ])[0];
+
+  it.each(['a.2.2.10.1.1.1.3.3', 'A.2.2.10.1.1.1.3.3', '  A.2.2.10.1.1.1.3.3  '])(
+    'accepts the complete document number %j even when it is absent from the text',
+    (query) => {
+      expect(isExactMatch(queryStems(query), document)).toBe(true);
+    },
+  );
+
+  it.each(['A.2.2.10.1.1.1.3', 'A.2.2.10.1.1.1.3.3.1', 'A.2.2.10.1.1.1.3.4', 'A.2.2.10.1.1.1.3.3 timelock'])(
+    'does not treat a prefix, different number, or extra query words as identifier equality: %j',
+    (query) => {
+      expect(isExactMatch(queryStems(query), document)).toBe(false);
+    },
+  );
+});
+
 describe('coverageOf (SEARCH-70 Partial floor)', () => {
   it('is the matched share of distinct query stems, word-form tolerant', () => {
     const stems = queryStems('alpha beta gamma');

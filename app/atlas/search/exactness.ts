@@ -6,7 +6,8 @@
  * text (title, body, or extras; never across their seams). Generated search
  * text never counts toward exactness; every approximation the engine admits
  * (stemming, typo repair, prefix, generated-text-supplied words, scattered
- * placement) belongs to Partial matches instead.
+ * placement) belongs to Partial matches instead. A complete document-number
+ * match is also exact, ignoring case.
  *
  * Word forms ARE tolerated inside the window (the accepted knob setting): the
  * comparison is stem-level with compound pieces, so "duties" sits in an exact
@@ -109,10 +110,14 @@ const ownTextCache = new WeakMap<FlatAtlasDocument, Array<Array<Set<string>>>>()
 /**
  * The exact test (SEARCH-70, amended by SEARCH-81): the query's words within
  * one unordered window (span as for gap ≤ k), inside a single field of the
- * document's own text — title, body, extras; generated text excluded.
+ * document's own text — title, body, extras; generated text excluded. A single
+ * query token equal to the complete document number is also exact.
  */
 export function isExactMatch(stems: string[], document: FlatAtlasDocument, k: number = EXACT_SKIP_GRAM_K): boolean {
   if (stems.length === 0) return false;
+  // Document numbers are indexed as whole tokens and need not occur in the text.
+  // Compare the full value so descendants and other prefix hits remain partial.
+  if (stems.length === 1 && stems[0] === foldText(document.doc_no.trim())) return true;
   let fields = ownTextCache.get(document);
   if (!fields) {
     fields = [document.name, document.content, document.extras ?? '']

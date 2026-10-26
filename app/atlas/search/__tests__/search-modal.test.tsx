@@ -34,6 +34,57 @@ beforeEach(() => {
   vi.mocked(dispatchExpandScopeEvent).mockClear();
 });
 
+describe('SearchModal full-title priority', () => {
+  const trees = [
+    createDoc('Scope', 'T.1', 'Timelock Requirement', 'Timelock requirement.', {
+      articles: [
+        createDoc('Article', 'T.1.1', 'Timelock Requirements', 'Minimum delays for protected functions.'),
+        createDoc('Article', 'T.1.2', 'Timelock Requirements', 'Minimum delays for protected functions.'),
+        ...Array.from({ length: 10 }, (_, index) =>
+          createDoc(
+            'Article',
+            `T.1.${index + 3}`,
+            `Vault Timelock Requirements ${index + 1}`,
+            'Timelock requirements.',
+          ),
+        ),
+      ],
+    }),
+    createDoc('Scope', 'T.2', 'Controls', 'Timelock requirements apply to privileged actions.'),
+  ];
+
+  it.each(['timelock requirements', '  TIMELOCK   REQUIREMENTS  '])(
+    'puts complete title matches ahead of word forms and longer titles for %j',
+    async (query) => {
+      render(<SearchModal scopeTrees={trees} isOpen onClose={vi.fn()} />);
+      const user = userEvent.setup();
+      await searchFor(user, query);
+
+      await waitFor(() => {
+        const section = screen.getByRole('group', { name: 'Exact matches (14)' });
+        const options = within(section).getAllByRole('option');
+        expect(within(options[0]).getByText('T.1.1')).toBeInTheDocument();
+        expect(within(options[1]).getByText('T.1.2')).toBeInTheDocument();
+      });
+      // Both literal titles must precede other families/sections, even though
+      // they share a parent. Keyboard navigation follows the displayed order.
+      await user.keyboard('{ArrowDown}{ArrowUp}{Enter}');
+      expect(dispatchExpandScopeEvent).toHaveBeenCalledWith({ targetDocID: 'T.1.1' });
+    },
+  );
+
+  it('prefers the singular title when the query itself is singular', async () => {
+    render(<SearchModal scopeTrees={trees} isOpen onClose={vi.fn()} />);
+    const user = userEvent.setup();
+    await searchFor(user, 'timelock requirement');
+
+    await waitFor(() => {
+      const section = screen.getByRole('group', { name: 'Exact matches (14)' });
+      expect(within(within(section).getAllByRole('option')[0]).getByText('T.1')).toBeInTheDocument();
+    });
+  });
+});
+
 describe('SearchModal query syntax and Tools row (SEARCH-34)', () => {
   it('explains Atlas-vocabulary retrieval while keeping quoted searches literal (SEARCH-09)', async () => {
     const trees = [

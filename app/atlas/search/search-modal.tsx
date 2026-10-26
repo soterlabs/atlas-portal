@@ -114,6 +114,20 @@ function diversityInterleave(rows: ResultRowEntry[], keyOf: (doc: FlatAtlasDocum
   return out;
 }
 
+/** Full title equality takes priority over word-form matches and diversity. */
+function prioritizeFullTitles(rows: ResultRowEntry[], query: string): ResultRowEntry[] {
+  const normalize = (text: string) => foldText(text).trim().replace(/\s+/g, ' ');
+  const title = normalize(query);
+  if (!title) return rows;
+  const fullTitles: ResultRowEntry[] = [];
+  const others: ResultRowEntry[] = [];
+  for (const row of rows) {
+    (normalize(row.doc.name) === title ? fullTitles : others).push(row);
+  }
+  // Keep the existing relative order within both groups.
+  return [...fullTitles, ...others];
+}
+
 function typeColor(type: string): string {
   return typeColorMap[type as keyof typeof typeColorMap] ?? FALLBACK_TYPE_COLOR;
 }
@@ -1409,8 +1423,9 @@ export default function SearchModal({
       let aboveBar = all;
       let belowBar: typeof baseRows = [];
       if (category === 'exact') {
-        // SEARCH-72: diversity-ordered — nothing hidden, just interleaved.
-        aboveBar = diversityInterleave(all, diversityKeyOf);
+        // Keep full title matches first; diversity orders the remaining matches
+        // and breaks ties between identical titles without hiding any rows.
+        aboveBar = prioritizeFullTitles(diversityInterleave(all, diversityKeyOf), parsed.terms);
       } else if (category === 'related') {
         // SEARCH-74: the strength floor is ADMISSION — below-floor connections
         // are graph-mechanical noise and are dropped, not revealed.
@@ -1483,6 +1498,7 @@ export default function SearchModal({
     qualityRevealed,
     relatedEntries,
     diversityKeyOf,
+    parsed.terms,
     collapsedCategories,
   ]);
 

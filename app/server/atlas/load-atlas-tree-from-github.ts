@@ -108,6 +108,12 @@ let refreshInProgress = false;
  */
 let coldStartFetch: Promise<CacheEntry> | null = null;
 
+/**
+ * Next.js data-cache tag on the latest-commit lookup. `revalidateTag` with this
+ * tag discards the cached commit SHA so the next lookup goes to GitHub.
+ */
+export const ATLAS_SOURCE_CACHE_TAG = 'atlas-source';
+
 /** For tests: clear the in-memory compose cache and refresh schedule. */
 export function _clearAtlasComposeCache(): void {
   composeCache = null;
@@ -175,7 +181,7 @@ function githubAuthHeaders(): Record<string, string> {
 async function fetchLatestCommitMetadata(): Promise<AtlasCommitMetadata> {
   const response = await fetch(ATLAS_REPO_COMMITS_URL, {
     headers: githubAuthHeaders(),
-    next: { revalidate: 3600 },
+    next: { revalidate: 3600, tags: [ATLAS_SOURCE_CACHE_TAG] },
   });
   if (!response.ok) {
     throw new Error(`Failed to fetch latest commit metadata from GitHub: ${response.status} ${response.statusText}`);
@@ -536,6 +542,27 @@ export async function fetchAtlasMarkdownMetadata(): Promise<AtlasCommitMetadata>
     };
   }
   return fetchLatestCommitMetadata();
+}
+
+/**
+ * Re-check the canonical branch now instead of waiting for the refresh
+ * interval, and recompose if the commit SHA has changed.
+ *
+ * Used by the revalidate endpoint after an Atlas merge. The caller should first
+ * call `revalidateTag(ATLAS_SOURCE_CACHE_TAG, ...)` so the latest-commit lookup
+ * is not served from the Next.js data cache. The cache keeps serving the
+ * last-known-good content until the new compose succeeds. This only refreshes
+ * the server instance handling the request; other instances pick up the new SHA
+ * at their next scheduled refresh (at most REFRESH_INTERVAL_MS later, and no
+ * longer behind a stale data-cache entry).
+ *
+ * Returns the commit SHA the cache holds afterwards (null if empty).
+ */
+export async function refreshAtlasSourceNow(): Promise<string | null> {
+  if (loadLocalAtlasOverride() !== null) return 'local';
+  nextRefreshAt = 0;
+  await refreshComposeCacheIfStale();
+  return composeCache?.sha ?? null;
 }
 
 /**

@@ -17,6 +17,7 @@ import {
   fetchAtlasMarkdownMetadata,
   loadAtlasMarkdownForSync,
   loadAtlasMarkdownFromGitHub,
+  refreshAtlasSourceNow,
 } from './load-atlas-tree-from-github';
 
 const FIXTURE_DIR = path.join(__dirname, '..', '..', '..', 'tests', 'fixtures');
@@ -220,6 +221,45 @@ describe('compose cache hot path', () => {
 
     const c2 = await fetchAtlasMarkdownContent();
     expect(c2).toBe(c1);
+  });
+});
+
+describe('refreshAtlasSourceNow', () => {
+  function specs(sha: string, tarballBytes: Buffer): MockResponseSpec[] {
+    return [
+      { url: ATLAS_REPO_COMMITS_URL, status: 200, body: commitResponse(sha, sha), contentType: 'application/json' },
+      { url: ATLAS_REPO_TARBALL_URL, status: 200, body: tarballBytes, contentType: 'application/gzip' },
+    ];
+  }
+
+  it('picks up a new commit immediately instead of waiting for the refresh interval', async () => {
+    const tarballBytes = fs.readFileSync(FIXTURE_TARBALL);
+    setupFetchMocks(specs('sha-old', tarballBytes));
+    await loadAtlasMarkdownFromGitHub(); // cold start at sha-old
+
+    // Upstream advances. Within the refresh interval a normal read still serves sha-old.
+    setupFetchMocks(specs('sha-new', tarballBytes));
+    const before = await loadAtlasMarkdownFromGitHub();
+    expect(before.commitSha).toBe('sha-old');
+
+    // A forced refresh re-checks the branch and recomposes: commits + tarball.
+    setupFetchMocks(specs('sha-new', tarballBytes));
+    const sha = await refreshAtlasSourceNow();
+    expect(sha).toBe('sha-new');
+    expect(fetchCallCount).toBe(2);
+    const after = await loadAtlasMarkdownFromGitHub();
+    expect(after.commitSha).toBe('sha-new');
+  });
+
+  it('only checks the commit when the SHA is unchanged', async () => {
+    const tarballBytes = fs.readFileSync(FIXTURE_TARBALL);
+    setupFetchMocks(specs('sha-same', tarballBytes));
+    await loadAtlasMarkdownFromGitHub();
+
+    setupFetchMocks(specs('sha-same', tarballBytes));
+    const sha = await refreshAtlasSourceNow();
+    expect(sha).toBe('sha-same');
+    expect(fetchCallCount).toBe(1); // commits lookup only, no tarball
   });
 });
 

@@ -1,5 +1,6 @@
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
+import { ATLAS_SOURCE_CACHE_TAG, refreshAtlasSourceNow } from '@/app/server/atlas/load-atlas-tree-from-github';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,12 +19,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing parameter' }, { status: 400 });
     }
 
+    // Atlas content sits behind its own caches (the data-cache entry for the
+    // latest-commit lookup and the in-memory compose cache), so revalidatePath
+    // alone re-renders pages from stale content. Refresh the source first.
+    revalidateTag(ATLAS_SOURCE_CACHE_TAG, { expire: 0 });
+    const atlasCommitSha = await refreshAtlasSourceNow();
+
     // Call revalidatePath in proper Next.js context
     revalidatePath(path);
 
     return NextResponse.json({
       success: true,
       message: `Successfully revalidated path: ${path}`,
+      atlasCommitSha,
       revalidatedAt: new Date().toISOString(),
     });
   } catch (error) {

@@ -1,6 +1,6 @@
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { ATLAS_SOURCE_CACHE_TAG, refreshAtlasSourceNow } from '@/app/server/atlas/load-atlas-tree-from-github';
 import { NextRequest, NextResponse } from 'next/server';
+import { ATLAS_SOURCE_CACHE_TAG, refreshAtlasSourceNow } from '@/app/server/atlas/load-atlas-tree-from-github';
 
 export async function POST(request: NextRequest) {
   try {

@@ -93,10 +93,25 @@ describe('applyCuration (SEARCH-82)', () => {
     expect(() => applyCuration(harvested(), { add: { zz: [] } })).toThrow(/invalid curation entry/);
   });
 
-  it('is strict, so the tracked file cannot rot as the corpus moves', () => {
-    expect(() => applyCuration(harvested(), { exclude: ['gone'] })).toThrow(/no such acronym/);
-    expect(() => applyCuration(harvested(), { override: { gone: 'some phrase' } })).toThrow(/move it to add/);
-    expect(() => applyCuration(harvested(), { add: { crr: 'other phrase' } })).toThrow(/move it to override/);
+  it('reports corpus drift without failing, and still applies the curated intent', () => {
+    const drift: string[] = [];
+    const onDrift = (message: string) => drift.push(message);
+    expect(applyCuration(harvested(), { exclude: ['gone'] }, onDrift).has('crr')).toBe(true);
+    expect(applyCuration(harvested(), { override: { gone: 'some phrase' } }, onDrift).get('gone')).toMatchObject({
+      phrases: ['some phrase'],
+      source: 'curated',
+    });
+    expect(applyCuration(harvested(), { add: { crr: 'other phrase' } }, onDrift).get('crr')).toMatchObject({
+      phrases: ['other phrase'],
+      source: 'curated',
+    });
+    expect(drift).toHaveLength(3);
+    expect(drift[0]).toMatch(/no such acronym/);
+    expect(drift[1]).toMatch(/move it to add/);
+    expect(drift[2]).toMatch(/move it to override/);
+  });
+
+  it('still throws on malformed entries', () => {
     // Junk entries fail loudly rather than shipping.
     expect(() => applyCuration(harvested(), { add: { 'a b': 'x y' } })).toThrow(/invalid curation entry/);
     expect(() => applyCuration(harvested(), { add: { zz: 'oneword' } })).toThrow(/invalid curation entry/);

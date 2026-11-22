@@ -184,7 +184,8 @@ export function applyCuration(
   // Malformed entries (curatedEntry) still throw: those are authoring mistakes.
   for (const raw of curation.exclude ?? []) {
     const acronym = foldText(raw.trim());
-    if (!curated.delete(acronym)) onDrift(`curation excludes "${raw}", but the harvest has no such acronym — remove it`);
+    if (!curated.delete(acronym))
+      onDrift(`curation excludes "${raw}", but the harvest has no such acronym — remove it`);
   }
   for (const [raw, value] of Object.entries(curation.override ?? {})) {
     const entry = curatedEntry(raw, value);

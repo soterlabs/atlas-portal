@@ -153,6 +153,7 @@ const CURATED_ACRONYM = /^[a-z0-9]{2,6}$/;
 export function applyCuration(
   table: Map<string, AbbreviationEntry>,
   curation: AbbreviationCuration,
+  onDrift: (message: string) => void = (message) => console.warn(`[abbreviations] ${message}`),
 ): Map<string, AbbreviationMeanings> {
   const curated = new Map<string, AbbreviationMeanings>(
     [...table.values()].map((entry) => [
@@ -176,21 +177,26 @@ export function applyCuration(
     }
     return { acronym: folded, phrases, source: 'curated' };
   };
+  // Corpus drift (an entry that no longer matches what the harvest found) is reported,
+  // not thrown: the Atlas changes weekly outside this repo, and a stale line in a
+  // search-tuning file must not block production deploys (2026-11: a stale "sec"
+  // exclusion failed every build for 10 days). The curated intent still applies.
+  // Malformed entries (curatedEntry) still throw: those are authoring mistakes.
   for (const raw of curation.exclude ?? []) {
     const acronym = foldText(raw.trim());
-    if (!curated.delete(acronym)) throw new Error(`curation excludes "${raw}", but the harvest has no such acronym`);
+    if (!curated.delete(acronym)) onDrift(`curation excludes "${raw}", but the harvest has no such acronym — remove it`);
   }
   for (const [raw, value] of Object.entries(curation.override ?? {})) {
     const entry = curatedEntry(raw, value);
     if (!curated.has(entry.acronym)) {
-      throw new Error(`curation overrides "${raw}", but the harvest has no such acronym — move it to add`);
+      onDrift(`curation overrides "${raw}", but the harvest has no such acronym — move it to add`);
     }
     curated.set(entry.acronym, entry);
   }
   for (const [raw, value] of Object.entries(curation.add ?? {})) {
     const entry = curatedEntry(raw, value);
     if (curated.has(entry.acronym)) {
-      throw new Error(`curation adds "${raw}", but the harvest already has it — move it to override`);
+      onDrift(`curation adds "${raw}", but the harvest already has it — move it to override`);
     }
     curated.set(entry.acronym, entry);
   }
